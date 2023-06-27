@@ -16,6 +16,12 @@ const ERRORS = {
   },
 };
 
+const defaultAgeFormat = {
+  year: '- -',
+  month: '- -',
+  day: '- -',
+};
+
 function App() {
   const [age, setAge] = useState({ year: null, month: null, day: null });
   const [yearError, setYearError] = useState('');
@@ -78,8 +84,19 @@ function App() {
   function calAge(birthdate) {
     let { year, month, day } = birthdate;
 
-    if (!year || !month || !day) showRequiredFieldsErrors(year, month, day);
-    else {
+    if (!year || !month || !day) {
+      showRequiredFieldsErrors(year, month, day);
+    } else {
+      const enteredDate = moment([year, Number(month) - 1, day]);
+      const today = moment();
+      const dateInPast = today.diff(enteredDate, 'days') > 0;
+
+      if (!dateInPast) {
+        setAge({ ...defaultAgeFormat });
+        resetErrors();
+
+        return;
+      }
       year = parseInt(year, 10);
       month = parseInt(month, 10);
       day = parseInt(day, 10);
@@ -91,18 +108,24 @@ function App() {
       checkMonthValidity(month);
       checkDayValidity(day);
 
-      let ageResult;
+      let ageDuration;
 
       if (valid) {
-        const ageFormat = moment(`${year}-${month + 1}-${day}`, 'YYYY-MM-DD');
-        ageResult = moment.duration(moment().diff(ageFormat));
+        const dob = moment(`${year}-${month}-${day}`, 'YYYY-MM-DD');
+        const now = moment();
+
+        ageDuration = moment.duration(now.diff(dob));
       }
 
-      setAge({
-        year: valid ? ageResult.years() : '- -',
-        month: valid ? ageResult.months() + 1 : '- -',
-        day: valid ? ageResult.days() : '- -',
-      });
+      setAge(
+        valid
+          ? {
+              year: ageDuration.years().toString(),
+              month: ageDuration.months().toString(),
+              day: ageDuration.days().toString(),
+            }
+          : { ...defaultAgeFormat }
+      );
     }
   }
 
